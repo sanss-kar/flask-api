@@ -1,46 +1,42 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from pymongo import MongoClient
+import os
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:sanskar@localhost/Resturant"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+mongo_url = os.getenv("MONGO_URI")
 
-db = SQLAlchemy(app)
+if not mongo_url:
+    print("⚠ MONGO_URI not found. Using LOCAL MongoDB.")
+    mongo_url = "mongodb://localhost:27017/"
 
-class Registration(db.Model):
-    __tablename__ = "registration"
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100))
-    email = db.Column(db.String(100))
-    password = db.Column(db.String(100))
-    confirm_password = db.Column(db.String(100))
+# Connect to MongoDB
+client = MongoClient(mongo_url)
+ 
+# Database & Collection
+db = client["Resturant"]        
+collection = db["registration"] 
 
 @app.route("/")
 def home():
-    return "Hello, Flask!"
+    return "Hello from MongoDB API!"
 
 @app.route("/registration", methods=['POST'])
 def registration():
-    data = request.get_json()  # Receive JSON data
 
+    data = request.get_json()
     user_name = data.get("username")
     email = data.get("email")
     password = data.get("password")
     confirm_password = data.get("confirm_password")
+    new_user = {
+        "username": user_name,
+        "email": email,
+        "password": password,
+        "confirm_password": confirm_password
+    }
 
-    print(user_name, email, password, confirm_password)
-
-    new_user = Registration(
-        username=user_name,
-        email=email,
-        password=password,
-        confirm_password=confirm_password
-    )
-
-    db.session.add(new_user)
-    db.session.commit()
+    collection.insert_one(new_user)
 
     return jsonify({"message": f"{user_name} inserted successfully"})
 

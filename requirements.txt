@@ -1,4 +1,4 @@
-flask
-flask_sqlalchemy
-pymysql
+Flask
 gunicorn
+pymongo
+dnspython
