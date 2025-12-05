@@ -23,7 +23,6 @@ def home():
 
 @app.route("/registration", methods=['POST'])
 def registration():
-
     data = request.get_json()
     user_name = data.get("username")
     email = data.get("email")
@@ -35,10 +34,27 @@ def registration():
         "password": password,
         "confirm_password": confirm_password
     }
-
     collection.insert_one(new_user)
 
     return jsonify({"message": f"{user_name} inserted successfully"})
+
+@app.route("/login", methods=['POST'])
+def login():
+    data = request.get_json(force=True, silent=True)
+
+    email = data.get("email")
+    password = data.get("password")
+
+    user= collection.find_one({"email": email})
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    if user["password"] != password:
+        return jsonify({"error": "Incorrect password"}), 401
+
+    return jsonify({"message": "Login successfull!"})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
